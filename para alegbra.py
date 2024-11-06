@@ -1,32 +1,51 @@
 import numpy as np
 from fractions import Fraction
+from sympy import Matrix, pretty
 
-# Preguntar al usuario si desea usar números imaginarios
-usar_imaginarios = input("¿Desea trabajar con números imaginarios? (s/n): ").lower() == 's'
+# Función para detectar el tipo de número y convertirlo
+def convertir_entrada(entrada):
+    entrada = entrada.replace(" ", "").replace("i", "j")  # Reemplaza "i" con "j" para números complejos en Python
+    try:
+        if "/" in entrada:
+            return Fraction(entrada)  # Convierte a fracción si contiene "/"
+        elif "j" in entrada:
+            return complex(entrada)   # Convierte a número complejo si contiene "j"
+        else:
+            return float(entrada) if "." in entrada else int(entrada)  # Float o int según corresponda
+    except ValueError:
+        print("Entrada inválida. Intente de nuevo.")
+        return None
 
-# Función para crear una matriz con elementos ingresados por el usuario
-def input_matriz(filas, columnas, usar_imaginarios):
+# Función para crear una matriz a partir de entradas del usuario
+def input_matriz(filas, columnas):
     matriz = []
     for i in range(filas):
         fila = []
         for j in range(columnas):
-            entrada = input(f"Ingrese el valor de la posición ({i+1},{j+1}): ")
-            entrada = entrada.replace(" ", "").replace("i", "j")  # Reemplaza "i" con "j" si se usan imaginarios
-            try:
-                if "/" in entrada:
-                    fila.append(Fraction(entrada))
-                elif "j" in entrada and usar_imaginarios:
-                    fila.append(complex(entrada))
+            while True:
+                entrada = input(f"Ingrese el valor de la posición ({i+1},{j+1}): ")
+                valor = convertir_entrada(entrada)
+                if valor is not None:
+                    fila.append(valor)
+                    break
                 else:
-                    fila.append(float(entrada) if "." in entrada else int(entrada))
-            except ValueError:
-                print("Entrada inválida, por favor ingrese un número entero, fracción o complejo.")
-                return None
+                    print("Por favor, ingrese un número válido.")
         matriz.append(fila)
-    # Define el tipo de datos de la matriz según si se usan imaginarios o no
-    return np.array(matriz, dtype=complex if usar_imaginarios else float)
+    return np.array(matriz)
+
+# Función para imprimir la matriz en formato ordenado
+def mostrar_matriz(matriz):
+    # Convertir la matriz de numpy a una matriz de SymPy para una mejor visualización
+    matriz_sympy = Matrix(matriz.tolist())
+    print(pretty(matriz_sympy))
 
 # Funciones para operaciones específicas
+def matriz_inversa(A):
+    if np.linalg.det(A) == 0:
+        return "La matriz no tiene inversa (determinante es cero)."
+    else:
+        return np.linalg.inv(A)
+
 def matriz_triangular(A, tipo="superior"):
     return np.triu(A) if tipo == "superior" else np.tril(A)
 
@@ -59,7 +78,7 @@ def resolver_ecuacion(A, B):
     else:
         return "No se puede resolver; la matriz A debe ser cuadrada y B debe tener dimensiones compatibles."
 
-# Menu de opciones
+# Menú de opciones
 def menu():
     print("\nSeleccione la operación:")
     print("1: Sumar matrices")
@@ -74,6 +93,7 @@ def menu():
     print("10: Conjugado transpuesto")
     print("11: Potencia n-ésima de una matriz")
     print("12: Resolver ecuación matricial (Ax = B)")
+    print("13: Inversa de una matriz")
     opcion = int(input("Ingrese el número de la operación que desea realizar: "))
     return opcion
 
@@ -86,16 +106,15 @@ opcion = menu()
 
 # Verificación y ejecución de la opción
 if opcion in [1, 2, 3]:
-    # Operaciones básicas requieren dos matrices de mismas dimensiones
     filas_B = int(input("Ingrese el número de filas para la matriz B: "))
     columnas_B = int(input("Ingrese el número de columnas para la matriz B: "))
     if filas_A != filas_B or columnas_A != columnas_B:
         print("Error: Las matrices deben tener las mismas dimensiones.")
     else:
         print("Ingrese los valores para la matriz A:")
-        A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+        A = input_matriz(filas_A, columnas_A)
         print("\nIngrese los valores para la matriz B:")
-        B = input_matriz(filas_B, columnas_B, usar_imaginarios)
+        B = input_matriz(filas_B, columnas_B)
         if opcion == 1:
             resultado = A + B
             print("\nResultado de A + B:")
@@ -105,67 +124,81 @@ if opcion in [1, 2, 3]:
         elif opcion == 3:
             resultado = A @ B
             print("\nResultado de A x B:")
+        mostrar_matriz(resultado)
 elif opcion == 4:
-    # Matriz triangular
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     tipo = input("¿Desea matriz triangular superior o inferior? (superior/inferior): ")
     resultado = matriz_triangular(A, tipo)
     print(f"\nMatriz triangular {tipo}:")
+    mostrar_matriz(resultado)
 elif opcion == 5:
-    # Matriz diagonal
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     resultado = matriz_diagonal(A)
     print("\nMatriz diagonal:")
+    mostrar_matriz(resultado)
 elif opcion == 6:
-    # Verificar matriz escalar
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     es_escalar, resultado = matriz_escalar(A)
-    print("\nEs matriz escalar:" if es_escalar else "No es matriz escalar.")
+    if es_escalar:
+        print("\nEs matriz escalar:")
+        mostrar_matriz(resultado)
+    else:
+        print("No es matriz escalar.")
 elif opcion == 7:
-    # Traza
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     resultado = traza(A)
     print("\nTraza de la matriz A:", resultado)
 elif opcion == 8:
-    # Transposición
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     resultado = transposicion(A)
     print("\nTransposición de la matriz A:")
+    mostrar_matriz(resultado)
 elif opcion == 9:
-    # Conjugado
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     resultado = conjugado(A)
     print("\nConjugado de la matriz A:")
+    mostrar_matriz(resultado)
 elif opcion == 10:
-    # Conjugado transpuesto
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     resultado = conjugado_transpuesto(A)
     print("\nConjugado transpuesto de la matriz A:")
+    mostrar_matriz(resultado)
 elif opcion == 11:
-    # Potencia n-ésima
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     n = int(input("Ingrese el valor de n para la potencia: "))
     resultado = potencia(A, n)
     print(f"\nMatriz A elevada a la potencia {n}:")
+    mostrar_matriz(resultado)
 elif opcion == 12:
-    # Resolver ecuación Ax = B
     filas_B = int(input("Ingrese el número de filas para la matriz B: "))
     print("Ingrese los valores para la matriz A:")
-    A = input_matriz(filas_A, columnas_A, usar_imaginarios)
+    A = input_matriz(filas_A, columnas_A)
     print("\nIngrese los valores para la matriz B:")
-    B = input_matriz(filas_B, 1, usar_imaginarios)  # Matriz B es vector columna
+    B = input_matriz(filas_B, 1)
     resultado = resolver_ecuacion(A, B)
-    print("\nSolución de Ax = B:" if isinstance(resultado, np.ndarray) else resultado)
+    if isinstance(resultado, np.ndarray):
+        print("\nSolución de Ax = B:")
+        mostrar_matriz(resultado)
+    else:
+        print(resultado)
+elif opcion == 13:
+    print("Ingrese los valores para la matriz A:")
+    A = input_matriz(filas_A, columnas_A)
+    resultado = matriz_inversa(A)
+    if isinstance(resultado, np.ndarray):
+        print("\nInversa de la matriz A:")
+        mostrar_matriz(resultado)
+    else:
+        print(resultado)
 else:
     print("Opción no válida")
 
-print(resultado)
 
