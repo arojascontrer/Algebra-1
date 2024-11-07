@@ -226,6 +226,88 @@ def encontrar_raices(coeficientes: np.ndarray) -> List[complex]:
     # Invertimos el orden de los coeficientes para numpy.roots
     return np.roots(coeficientes[::-1])
 
+def mostrar_galera_ruffini(coeficientes: list, divisor: float, resultados: list, residuo: float):
+    """
+    Muestra la división sintética en formato visual de galera.
+    """
+    # Primera línea: coeficientes originales
+    print("\n" + "="*50)
+    coef_str = "    "
+    for c in coeficientes:
+        coef_str += f"{c:4d}  "
+    print(coef_str)
+    
+    # Segunda línea: números que se bajan
+    div_str = f"{divisor:2d} │"
+    for i in range(len(resultados)):
+        div_str += "    "  # Espacios para alinear
+        div_str += f"↓"
+    print(div_str)
+    
+    # Tercera línea: resultados de multiplicación
+    mul_str = "   "
+    for r in resultados:
+        mul_str += f"{r:4d}  "
+    print(mul_str)
+    
+    # Línea final: resultados
+    print("   " + "-"*(len(coef_str)-3))
+    res_str = "    "
+    for r in resultados:
+        res_str += f"{r:4d}  "
+    res_str += f"{int(residuo):4d}"
+    print(res_str + "\n")
+
+def ruffini_visual(coeficientes: list, divisor: float, mostrar: bool = False) -> tuple:
+    """
+    Realiza la división sintética mostrando el proceso visual solo si mostrar=True.
+    """
+    n = len(coeficientes)
+    resultados = [coeficientes[0]]
+    
+    for i in range(1, n):
+        valor = coeficientes[i] + (divisor * resultados[i-1])
+        resultados.append(valor)
+    
+    residuo = resultados.pop()
+    
+    if mostrar:
+        mostrar_galera_ruffini(coeficientes, divisor, resultados, residuo)
+        
+    return resultados, residuo
+
+def probar_raices_ruffini(coeficientes: list) -> list:
+    """
+    Prueba sistemáticamente números enteros para encontrar raíces,
+    mostrando solo los intentos exitosos.
+    """
+    raices = []
+    coef_actual = coeficientes.copy()
+    
+    while len(coef_actual) > 1:
+        raiz_encontrada = False
+        # Probar números del 1 al 100 y sus negativos alternadamente
+        for i in range(1, 101):
+            for divisor in [i, -i]:
+                cociente, residuo = ruffini_visual(coef_actual, divisor, mostrar=False)
+                
+                if abs(residuo) < 1e-10:
+                    print(f"\n¡Raíz encontrada!: {divisor}")
+                    # Mostrar el proceso visual solo cuando encontramos una raíz
+                    ruffini_visual(coef_actual, divisor, mostrar=True)
+                    raices.append(divisor)
+                    coef_actual = cociente
+                    raiz_encontrada = True
+                    break
+            if raiz_encontrada:
+                break
+                
+        if not raiz_encontrada:
+            print("\nNo se encontraron más raíces racionales por Ruffini")
+            break
+            
+    return raices
+
 def formatear_numero_complejo(num: complex, precision: int = 3) -> str:
     """
     Formatea un número complejo para mostrarlo de forma legible.
@@ -286,6 +368,7 @@ def factorizar_polinomio(coeficientes: np.ndarray) -> str:
     
     return " × ".join(factores)
 
+
 def Divsint():
     """
     Función principal para la factorización de polinomios.
@@ -297,24 +380,42 @@ def Divsint():
     
     while True:
         try:
-            polinomio = input("Ingrese el polinomio: ")
+            polinomio = input("\nIngrese el polinomio: ")
             coeficientes = obtener_coeficientes(polinomio)
-            print(f"Coeficientes: {coeficientes}")
+            coef_list = [int(c) if c.is_integer() else c for c in coeficientes[::-1]]
             
-            factorizacion = factorizar_polinomio(coeficientes)
-            print("\nFactorización:")
-            print(factorizacion)
+            print("\nBuscando raíces por el método de Ruffini:")
+            raices_ruffini = probar_raices_ruffini(coef_list)
             
-            # Preguntamos si desea continuar
+            if raices_ruffini:
+                print("\nRaíces encontradas por Ruffini:", raices_ruffini)
+                
+                print("\nComprobando todas las raíces con numpy.roots:")
+                raices_np = encontrar_raices(coeficientes)
+                print("Todas las raíces (incluyendo complejas):")
+                for i, raiz in enumerate(raices_np, 1):
+                    print(f"Raíz {i}: {formatear_numero_complejo(raiz)}")
+                
+                print("\nFactorización completa:")
+                print(factorizar_polinomio(coeficientes))
+            else:
+                print("\nImposible encontrar raíces con Ruffini")
+                print("Encontrando raíces por factorización...")
+                raices_np = encontrar_raices(coeficientes)
+                print("\nRaíces encontradas:")
+                for i, raiz in enumerate(raices_np, 1):
+                    print(f"Raíz {i}: {formatear_numero_complejo(raiz)}")
+                
+                print("\nFactorización completa:")
+                print(factorizar_polinomio(coeficientes))
+            
             continuar = input("\n¿Desea factorizar otro polinomio? (s/n): ").lower()
             if continuar != 's':
                 break
             
         except Exception as e:
-            print(f"\nError: Hubo un problema al procesar el polinomio: {str(e)}")
+            print(f"\nError: {str(e)}")
             print("Por favor, verifique el formato e intente nuevamente.")
-            
-            # Preguntamos si desea intentar de nuevo
             continuar = input("\n¿Desea intentar de nuevo? (s/n): ").lower()
             if continuar != 's':
                 break
