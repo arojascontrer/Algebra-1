@@ -46,8 +46,8 @@ def mostrar_credits():
     print("Hecho por:")
     print("Rojas Contreras Aarón")
     print("Fuentes Llantada Marco Antonio")
-    print("")
-    print("Versión 0.3.0")
+    print("Valle Alvarez Carlos David")
+    print("Versión 1.0.0")
     input("\nPresione Enter para continuar...")
 
 # Función para detectar el tipo de número y convertirlo
