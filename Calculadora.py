@@ -46,7 +46,7 @@ def mostrar_credits():
     print("Hecho por:")
     print("Rojas Contreras Aarón")
     print("Fuentes Llantada Marco Antonio")
-    print("Valle Alvarez Carlos David")
+    print("Del Valle Alvarez Carlos David")
     print("Versión 1.0.0")
     input("\nPresione Enter para continuar...")
 
